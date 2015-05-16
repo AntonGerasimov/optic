@@ -590,24 +590,57 @@ public:
     
 public:
     Lens( float x, float y, float l_0, float deg_0, float f_0){       //deg from vertical 0 <= deg < 90 !!! against hour ;
-        x1 = x - (float)(l_0/2) * sin (deg_0 * PI / 180) ;
-        x2 = x + (float)(l_0/2) * sin (deg_0 * PI / 180);
-        y1 = y - (float)(l_0/2) * cos (deg_0 * PI / 180);
-        y2 = y + (float)(l_0/2) * cos (deg_0 * PI / 180);
+        float x_1 = x - (float)(l_0/2) * sin (deg_0 * PI / 180);
+        float x_2 = x + (float)(l_0/2) * sin (deg_0 * PI / 180);
+        float y_1 = y - (float)(l_0/2) * cos (deg_0 * PI / 180);
+        float y_2 = y + (float)(l_0/2) * cos (deg_0 * PI / 180);
+        
+        
+        deg = deg_0;
+        
+        x1 = x_1 * cos (deg * PI / 180) - y_1 * sin (deg * PI / 180);
+        x2 = x_2 * cos (deg * PI / 180) - y_2 * sin (deg * PI / 180);
+        y1 = x_1 * sin (deg * PI / 180) + y_1 * cos (deg * PI / 180);
+        y2 = x_2 * sin (deg * PI / 180) + y_2 * cos (deg * PI / 180);
+        
         l = l_0;
         f = f_0;
-        deg = deg_0;
     }
     point * cross_point (RAY * r) const {
         point * p = new point  ();
+        float p_x, p_y;
+        float r_x, r_y;
+        r_x = r->x;
+        r_y = r->y;
+        r->x = r_x * cos (this->deg * PI / 180) - r_y * sin (this->deg * PI / 180);
+        r->y = r_x * sin (this->deg * PI / 180) + r_y * cos (this->deg * PI / 180);
+        if (r->deg >= this->deg)
+            r->deg = r->deg - this->deg;
+        else
+            r->deg = 360 + r->deg -this->deg;
+        
         if ((orient (this->x1,this->y1,this->x2,this->y2,r->x,r->y,1) < 0) && ((r->deg <= 90) || (r->deg >= 270))){
             float det = this->y2 - this->y1 - tan (r->deg * PI / 180) * (this->x1 - this->x2);
             float det_1 = this->y2 * this->x1 - this->y1 * this->x2 - (this->x1 - this->x2) * (r->y + tan (r->deg * PI / 180) * r->x);
             float det_2 = (this->y2 - this->y1) * (r->y + tan (r->deg * PI / 180) * r->x) - (this->y2 * this->x1 - this->y1 * this->x2) * tan (r->deg * PI / 180);
             p->x = (float)det_1/det;
             p->y = (float)det_2/det;
-            if (( p->x >= x1 ) && ( p->x <= x2 ) && ( p->y >= y1 ) && ( p->y <= y2 ))
+            if (( p->y >= y1 ) && ( p->y <= y2 )){
+                p_x = p->x;
+                p_y = p->y;
+                p->x = p_x * cos (this->deg * PI / 180) + p_y * sin (this->deg * PI / 180);
+                p->y = - p_x * sin (this->deg * PI / 180) + p_y * cos (this->deg * PI / 180);
+                
+                r_x = r->x;
+                r_y = r->y;
+                r->x = r_x * cos (this->deg * PI / 180) + r_y * sin (this->deg * PI / 180);
+                r->y = - r_x * sin (this->deg * PI / 180) + r_y * cos (this->deg * PI / 180);
+                r->deg = deg + this->deg;
+                if (r->deg > 360)
+                    r->deg = r->deg - 360;
+                
                 return p;
+            }
         }
         if ((orient (this->x1,this->y1,this->x2,this->y2,r->x,r->y,1) > 0) && ((r->deg >= 90) && (r->deg <= 270))) {
             float det = this->y2 - this->y1 - tan (r->deg * PI / 180) * (this->x1 - this->x2);
@@ -617,9 +650,30 @@ public:
             cout << "p->x = " << p->x << "\n" ;
             p->y = (float)det_2/det;
             cout << "p->x = " << p->x << "\n" ;
-            if (( p->x >= x1 ) && ( p->x <= x2 ) && ( p->y >= y1 ) && ( p->y <= y2 ))
+            if (( p->y >= y1 ) && ( p->y <= y2 )) {
+                p_x = p->x;
+                p_y = p->y;
+                p->x = p_x * cos (this->deg * PI / 180) + p_y * sin (this->deg * PI / 180);
+                p->y = - p_x * sin (this->deg * PI / 180) + p_y * cos (this->deg * PI / 180);
+                
+                r_x = r->x;
+                r_y = r->y;
+                r->x = r_x * cos (this->deg * PI / 180) + r_y * sin (this->deg * PI / 180);
+                r->y = - r_x * sin (this->deg * PI / 180) + r_y * cos (this->deg * PI / 180);
+                r->deg = deg + this->deg;
+                if (r->deg > 360)
+                    r->deg = r->deg - 360;
                 return p;
+            }
         }
+        
+        r_x = r->x;
+        r_y = r->y;
+        r->x = r_x * cos (this->deg * PI / 180) + r_y * sin (this->deg * PI / 180);
+        r->y = - r_x * sin (this->deg * PI / 180) + r_y * cos (this->deg * PI / 180);
+        r->deg = deg + this->deg;
+        if (r->deg > 360)
+            r->deg = r->deg - 360;
         return NULL;
     }
     
@@ -1068,14 +1122,7 @@ public:
                 p->x = p_x * cos (this->deg * PI / 180) + p_y * sin (this->deg * PI / 180);
                 p->y = - p_x * sin (this->deg * PI / 180) + p_y * cos (this->deg * PI / 180);
                 
-                r_x = r->x;
-                r_y = r->y;
-                r->x = r_x * cos (this->deg * PI / 180) + r_y * sin (this->deg * PI / 180);
-                r->y = - r_x * sin (this->deg * PI / 180) + r_y * cos (this->deg * PI / 180);
-                r->deg = deg + this->deg;
-                if (r->deg > 360)
-                    r->deg = r->deg - 360;
-                
+                delete r;
                 return p;
             }
         }
@@ -1093,13 +1140,7 @@ public:
                 p->x = p_x * cos (this->deg * PI / 180) + p_y * sin (this->deg * PI / 180);
                 p->y = - p_x * sin (this->deg * PI / 180) + p_y * cos (this->deg * PI / 180);
                 
-                r_x = r->x;
-                r_y = r->y;
-                r->x = r_x * cos (this->deg * PI / 180) + r_y * sin (this->deg * PI / 180);
-                r->y = - r_x * sin (this->deg * PI / 180) + r_y * cos (this->deg * PI / 180);
-                r->deg = deg + this->deg;
-                if (r->deg > 360)
-                    r->deg = r->deg - 360;
+                delete r;
                 return p;
             }
         }
@@ -1185,19 +1226,21 @@ int main ()
     //cout << orient (100,200,120,250,90,230,1)<< "\n";
     vector <Device *> my_device;
     
-    Device * d_1 = new Lens_wide (418, 216 , 100, 0, 400, 400, 6, 10);
+    Device * d_1 = new Lens (150, 200 , 100, 0, 30);
     my_device.push_back(d_1 );
     
     Device * d_2 = new Lens_ras (200, 100 , 100,  0 , 25);
     my_device.push_back(d_2 );
     
-    Device * d_3 = new Disc (602, 493 , 100,  100, 15, 1.6);
-    my_device.push_back(d_3 );
+    //Device * d_3 = new Disc (602, 493 , 100,  100, 15, 1.6);
+    //my_device.push_back(d_3 );
     
-    LASER my_laser (200,200, 285);
+    LASER my_laser (100,200, 0);
     
     //cout << orient (100,200,120,250,90,230,1) << "\n";
-    SCREEN * my_screen = new SCREEN (200, 300, 100, 90);
+    SCREEN * my_screen = new SCREEN (200, 200, 100, 0);
+    SCREEN * my_screen_2 = new SCREEN (350, 200, 100, 0);
+ 
     //my_screen->screen_pos();
     SOURCE my_source (0, 100);
     RAY * my_laser_ray = my_laser.rays_create();
@@ -1205,21 +1248,32 @@ int main ()
     
     point * cross = NULL;
     // LASER
+    
+    cross = my_device[0]->cross_point (  my_laser_ray );
+    //cout << "H:  r->x = " << my_laser_ray->x << " \n" << "  r->y = " << my_laser_ray->y << " \n  r->deg = " <<  my_laser_ray->deg << " \n" ;
+    if ( cross != NULL ) {
+        //new_p->x * cos (this->deg * PI / 180) + new_p->y * sin (this->deg * PI / 180) ;
+       // r->y = new_p->y * cos (this->deg * PI / 180) - new_p->x * sin (this->deg * PI / 180);
+        cout << "laser_ray crossed device " << 0 << " at the point x = " << cross->x << " y = " << cross->y << "\n";
+       // cout << "prev r->x = " <<  my_laser_ray->x  << "\n"<< "prev r->y = " <<  my_laser_ray->y << " \n prev r->deg = " <<  my_laser_ray->deg  << "\n" ;
+        my_device[0]->change_direction(   my_laser_ray,  cross);
+        cout << " new r->x = " << my_laser_ray->x << " \n" << " new r->y = " << my_laser_ray->y << " \n new r->deg = " <<  my_laser_ray->deg << " \n" ;
+    }
+    
+    cross = NULL;
+    
     cross = my_screen->cross_point (  my_laser_ray );
     if ( cross != NULL ) {
         cout << "laser_ray crossed screen " << " at the point x = " << cross->x << " y = " << cross->y << "\n";
     }
     
-    cross = my_device[2]->cross_point (  my_laser_ray );
-    cout << "H:  r->x = " << my_laser_ray->x << " \n" << "  r->y = " << my_laser_ray->y << " \n  r->deg = " <<  my_laser_ray->deg << " \n" ;
+    cross = NULL;
+    // LASER
+    cross = my_screen_2->cross_point (  my_laser_ray );
     if ( cross != NULL ) {
-        //new_p->x * cos (this->deg * PI / 180) + new_p->y * sin (this->deg * PI / 180) ;
-       // r->y = new_p->y * cos (this->deg * PI / 180) - new_p->x * sin (this->deg * PI / 180);
-        cout << "laser_ray crossed device " << 2 << " at the point x = " << cross->x << " y = " << cross->y << "\n";
-       // cout << "prev r->x = " <<  my_laser_ray->x  << "\n"<< "prev r->y = " <<  my_laser_ray->y << " \n prev r->deg = " <<  my_laser_ray->deg  << "\n" ;
-        my_device[2]->change_direction(   my_laser_ray,  cross);
-        cout << " new r->x = " << my_laser_ray->x << " \n" << " new r->y = " << my_laser_ray->y << " \n new r->deg = " <<  my_laser_ray->deg << " \n" ;
+        cout << "laser_ray crossed screen_2 " << " at the point x = " << cross->x << " y = " << cross->y << "\n";
     }
+
     
    /* cross = my_device[1]->cross_point (  my_laser_ray );
     if ( cross != NULL ) {
